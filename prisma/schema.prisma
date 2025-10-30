@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  uid         Int                @id @default(autoincrement())
+  username    String
+  email       String             @unique
+  password    String
+  role        Role
+  created_at  DateTime           @default(now())
+  players     GamePlayerTable[]
+  hostedGames GameSessionTable[] @relation("HostSessions")
+  quizzes     Quizz[]            @relation("CreatedQuizzes")
+}
+
+model Quizz {
+  qid         Int                @id @default(autoincrement())
+  title       String
+  description String
+  created_by  Int
+  created_at  DateTime           @default(now())
+  sessions    GameSessionTable[]
+  questions   QuestionTable[]
+  creator     User               @relation("CreatedQuizzes", fields: [created_by], references: [uid])
+}
+
+model QuestionTable {
+  id            Int                  @id @default(autoincrement())
+  quiz_id       Int
+  question      String
+  created_at    DateTime             @default(now())
+  answers       AnswerTable[]
+  playerAnswers PlayerAnswersTable[]
+  quiz          Quizz                @relation(fields: [quiz_id], references: [qid])
+}
+
+model AnswerTable {
+  id            Int                  @id @default(autoincrement())
+  question_id   Int
+  answer_text   String
+  is_correct    Boolean
+  question      QuestionTable        @relation(fields: [question_id], references: [id])
+  playerAnswers PlayerAnswersTable[]
+}
+
+model GameSessionTable {
+  id         Int               @id @default(autoincrement())
+  quiz_id    Int
+  host_id    Int
+  pin        Int
+  started_at DateTime          @default(now())
+  is_active  Boolean           @default(true)
+  players    GamePlayerTable[]
+  host       User              @relation("HostSessions", fields: [host_id], references: [uid])
+  quiz       Quizz             @relation(fields: [quiz_id], references: [qid])
+}
+
+model GamePlayerTable {
+  id         Int                  @id @default(autoincrement())
+  session_id Int
+  user_id    Int
+  nickname   String
+  score      Int
+  session    GameSessionTable     @relation(fields: [session_id], references: [id])
+  user       User                 @relation(fields: [user_id], references: [uid])
+  answers    PlayerAnswersTable[]
+}
+
+model PlayerAnswersTable {
+  id            Int             @id @default(autoincrement())
+  gameplayer_id Int
+  question_id   Int
+  answer_id     Int
+  answered_at   Int
+  answer        AnswerTable     @relation(fields: [answer_id], references: [id])
+  player        GamePlayerTable @relation(fields: [gameplayer_id], references: [id])
+  question      QuestionTable   @relation(fields: [question_id], references: [id])
+}
+
+enum Role {
+  teacher
+  student
+}
