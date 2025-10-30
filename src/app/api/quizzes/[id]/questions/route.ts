@@ -38,7 +38,7 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: number } }
+  { params }: { params: { id: string } }
 ) {
   const questions = await prisma.questionTable.findMany({
     where: { quiz_id: Number(params.id) },
